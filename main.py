@@ -3,7 +3,7 @@ from OpenGL.GL import *
 from OpenGL.GL.shaders import compileShader, compileProgram
 import numpy as np
 import math
-import time
+
 
 # Инициализация Pygame
 pygame.init()
