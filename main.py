@@ -2,12 +2,14 @@ import pygame
 from OpenGL.GL import *
 from OpenGL.GL.shaders import compileShader, compileProgram
 import numpy as np
+import math
+import time
 
 # Инициализация Pygame
 pygame.init()
 
 # Создание окна
-width, height = 800, 600
+width, height = 1200, 900
 screen = pygame.display.set_mode((width, height), pygame.OPENGL | pygame.DOUBLEBUF)
 
 # Загрузка текстуры
@@ -79,6 +81,7 @@ glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
 # Создание объекта для отслеживания времени
 clock = pygame.time.Clock()
 
+
 # Бесконечный цикл для отрисовки
 running = True
 while running:
@@ -102,10 +105,13 @@ while running:
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, None)
 
     # Отображение FPS
-    fps = int(clock.get_fps())
-    font = pygame.font.Font(None, 36)
-    fps_text = font.render("FPS: " + str(fps), True, (0, 0, 0))
-    screen.blit(fps_text, (10, 10))
+    fps = clock.get_fps()
+
+    fps_str = str(round(fps))
+
+    pygame.display.set_caption(f"FPS: {fps_str}")
+
+
 
     # Обновление экрана
     pygame.display.flip()
