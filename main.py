@@ -5,7 +5,7 @@ import random
 pygame.init()
 
 # Создание окна
-width, height = 800, 600
+width, height = 1200, 900
 screen = pygame.display.set_mode((width, height))
 pygame.display.set_caption("GPU Load")
 
@@ -42,8 +42,8 @@ while running:
     # Обновление экрана
     pygame.display.flip()
 
-    # Ограничение FPS до 60
-    clock.tick(60)
+    # Обновление времени
+    clock.tick()
 
 # Завершение работы Pygame
 pygame.quit()
