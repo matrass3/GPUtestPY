@@ -1,26 +1,80 @@
 import pygame
-import random
+from OpenGL.GL import *
+from OpenGL.GL.shaders import compileShader, compileProgram
+import numpy as np
 
 # Инициализация Pygame
 pygame.init()
 
 # Создание окна
 width, height = 800, 600
-screen = pygame.display.set_mode((width, height))
-pygame.display.set_caption("GPU Load")
+screen = pygame.display.set_mode((width, height), pygame.OPENGL | pygame.DOUBLEBUF)
 
 # Загрузка текстуры
 texture = pygame.image.load("texture.jpg")  # Замените "texture.png" на путь к вашему изображению
+texture_data = pygame.image.tostring(texture, "RGBA", 1)
 
-# Создание поверхности для рендеринга с более высоким разрешением
-render_width, render_height = 1600, 1200
-if texture.get_width() > render_width or texture.get_height() > render_height:
-    scale_factor = min(render_width / texture.get_width(), render_height / texture.get_height())
-    texture = pygame.transform.scale(texture, (int(texture.get_width() * scale_factor),
-                                               int(texture.get_height() * scale_factor)))
-    render_width, render_height = texture.get_width(), texture.get_height()
+# Создание шейдеров
+vertex_shader = """
+#version 330
+in vec2 position;
+in vec2 texcoord;
+out vec2 frag_texcoord;
+void main()
+{
+    gl_Position = vec4(position, 0.0, 1.0);
+    frag_texcoord = texcoord;
+}
+"""
 
-render_surface = pygame.Surface((render_width, render_height))
+fragment_shader = """
+#version 330
+in vec2 frag_texcoord;
+uniform sampler2D texture_sampler;
+out vec4 frag_color;
+void main()
+{
+    frag_color = texture(texture_sampler, frag_texcoord);
+}
+"""
+
+shader_program = compileProgram(
+    compileShader(vertex_shader, GL_VERTEX_SHADER),
+    compileShader(fragment_shader, GL_FRAGMENT_SHADER)
+)
+
+# Создание вершинного буфера и настройка вершинных данных
+vertex_data = np.array([
+    -1, -1, 0, 0,
+    -1, 1, 0, 1,
+    1, 1, 1, 1,
+    1, -1, 1, 0
+], dtype=np.float32)
+vertex_buffer = glGenBuffers(1)
+glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer)
+glBufferData(GL_ARRAY_BUFFER, vertex_data.nbytes, vertex_data, GL_STATIC_DRAW)
+
+# Создание индексного буфера и настройка индексных данных
+index_data = np.array([0, 1, 2, 0, 2, 3], dtype=np.uint32)
+index_buffer = glGenBuffers(1)
+glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer)
+glBufferData(GL_ELEMENT_ARRAY_BUFFER, index_data.nbytes, index_data, GL_STATIC_DRAW)
+
+# Настройка атрибутов вершинного шейдера
+position_loc = glGetAttribLocation(shader_program, "position")
+texcoord_loc = glGetAttribLocation(shader_program, "texcoord")
+glEnableVertexAttribArray(position_loc)
+glEnableVertexAttribArray(texcoord_loc)
+glVertexAttribPointer(position_loc, 2, GL_FLOAT, GL_FALSE, 16, ctypes.c_void_p(0))
+glVertexAttribPointer(texcoord_loc, 2, GL_FLOAT, GL_FALSE, 16, ctypes.c_void_p(8))
+
+# Создание и настройка текстуры
+texture_id = glGenTextures(1)
+glBindTexture(GL_TEXTURE_2D, texture_id)
+glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texture.get_width(), texture.get_height(), 0, GL_RGBA, GL_UNSIGNED_BYTE,
+             texture_data)
+glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
 
 # Создание объекта для отслеживания времени
 clock = pygame.time.Clock()
@@ -33,26 +87,24 @@ while running:
         if event.type == pygame.QUIT:
             running = False
 
-    # Генерация случайных координат для отображения текстуры
-    x = random.randint(0, render_width - texture.get_width())
-    y = random.randint(0, render_height - texture.get_height())
+    # Очистка буфера
+    glClear(GL_COLOR_BUFFER_BIT)
 
-    # Очистка поверхности для рендеринга
-    render_surface.fill((0, 0, 0))
+    # Использование шейдеров
+    glUseProgram(shader_program)
 
-    # Отрисовка текстуры на поверхности для рендеринга
-    render_surface.blit(texture, (x, y))
+    # Активация текстурного юнита и привязка текстуры
+    glActiveTexture(GL_TEXTURE0)
+    glBindTexture(GL_TEXTURE_2D, texture_id)
+    glUniform1i(glGetUniformLocation(shader_program, "texture_sampler"), 0)
 
-    # Масштабирование поверхности для рендеринга до размеров окна
-    scaled_surface = pygame.transform.scale(render_surface, (width, height))
-
-    # Отображение поверхности для рендеринга на экране
-    screen.blit(scaled_surface, (0, 0))
+    # Отрисовка треугольников
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, None)
 
     # Отображение FPS
     fps = int(clock.get_fps())
     font = pygame.font.Font(None, 36)
-    fps_text = font.render("FPS: " + str(fps), True, (255, 255, 255))
+    fps_text = font.render("FPS: " + str(fps), True, (0, 0, 0))
     screen.blit(fps_text, (10, 10))
 
     # Обновление экрана
