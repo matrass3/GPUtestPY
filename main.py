@@ -5,18 +5,17 @@ import numpy as np
 import math
 
 
-# Инициализация Pygame
 pygame.init()
 
-# Создание окна
+
 width, height = 1200, 900
 screen = pygame.display.set_mode((width, height), pygame.OPENGL | pygame.DOUBLEBUF)
 
-# Загрузка текстуры
+
 texture = pygame.image.load("texture.jpg")  # Замените "texture.png" на путь к вашему изображению
 texture_data = pygame.image.tostring(texture, "RGBA", 1)
 
-# Создание шейдеров
+
 vertex_shader = """
 #version 330
 in vec2 position;
@@ -45,7 +44,7 @@ shader_program = compileProgram(
     compileShader(fragment_shader, GL_FRAGMENT_SHADER)
 )
 
-# Создание вершинного буфера и настройка вершинных данных
+
 vertex_data = np.array([
     -1, -1, 0, 0,
     -1, 1, 0, 1,
@@ -56,13 +55,13 @@ vertex_buffer = glGenBuffers(1)
 glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer)
 glBufferData(GL_ARRAY_BUFFER, vertex_data.nbytes, vertex_data, GL_STATIC_DRAW)
 
-# Создание индексного буфера и настройка индексных данных
+
 index_data = np.array([0, 1, 2, 0, 2, 3], dtype=np.uint32)
 index_buffer = glGenBuffers(1)
 glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer)
 glBufferData(GL_ELEMENT_ARRAY_BUFFER, index_data.nbytes, index_data, GL_STATIC_DRAW)
 
-# Настройка атрибутов вершинного шейдера
+
 position_loc = glGetAttribLocation(shader_program, "position")
 texcoord_loc = glGetAttribLocation(shader_program, "texcoord")
 glEnableVertexAttribArray(position_loc)
@@ -70,7 +69,6 @@ glEnableVertexAttribArray(texcoord_loc)
 glVertexAttribPointer(position_loc, 2, GL_FLOAT, GL_FALSE, 16, ctypes.c_void_p(0))
 glVertexAttribPointer(texcoord_loc, 2, GL_FLOAT, GL_FALSE, 16, ctypes.c_void_p(8))
 
-# Создание и настройка текстуры
 texture_id = glGenTextures(1)
 glBindTexture(GL_TEXTURE_2D, texture_id)
 glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texture.get_width(), texture.get_height(), 0, GL_RGBA, GL_UNSIGNED_BYTE,
@@ -78,33 +76,33 @@ glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texture.get_width(), texture.get_height(
 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
 
-# Создание объекта для отслеживания времени
+
 clock = pygame.time.Clock()
 
 
-# Бесконечный цикл для отрисовки
+
 running = True
 while running:
-    # Обработка событий
+
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
 
-    # Очистка буфера
+
     glClear(GL_COLOR_BUFFER_BIT)
 
-    # Использование шейдеров
+
     glUseProgram(shader_program)
 
-    # Активация текстурного юнита и привязка текстуры
+
     glActiveTexture(GL_TEXTURE0)
     glBindTexture(GL_TEXTURE_2D, texture_id)
     glUniform1i(glGetUniformLocation(shader_program, "texture_sampler"), 0)
 
-    # Отрисовка треугольников
+
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, None)
 
-    # Отображение FPS
+
     fps = clock.get_fps()
 
     fps_str = str(round(fps))
@@ -113,11 +111,11 @@ while running:
 
 
 
-    # Обновление экрана
+
     pygame.display.flip()
 
-    # Обновление времени
+
     clock.tick()
 
-# Завершение работы Pygame
+
 pygame.quit()
